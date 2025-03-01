@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Coordinate Systems with Translation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Architects Daughter', cursive;
+      background-color: white;
+    }
+    #container {
+      background-color: white;
+    }
+    .slider-container {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    .slider-container label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #007acc;
+    }
+    .matrix-container {
+      position: absolute;
+      top: 50px;
+      right: 50px;
+      background-color: rgba(255, 255, 255, 0.8);
+      color: #007acc;
+      padding: 10px;
+      font-family: 'Architects Daughter', cursive;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  <div class="slider-container">
+    <label for="translationSlider">Translation X: <span id="translationValue">0</span></label>
+    <input type="range" id="translationSlider" min="-2" max="2" value="0" step="0.1" />
+  </div>
+  <div class="matrix-container">
+    <pre id="matrixValue"></pre>
+  </div>
+
+  <script>
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xffffff);
+    document.getElementById("container").appendChild(renderer.domElement);
+
+    // Fixed coordinate system
+    const fixedSystem = new THREE.Group();
+    scene.add(fixedSystem);
+
+    // Fixed X-axis (red)
+    const fixedXAxis = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 1, 0xff0000, 0.1, 0.1);
+    fixedSystem.add(fixedXAxis);
+    const fixedXLabel = createLabel("X", new THREE.Vector3(1.1, 0, 0));
+    fixedSystem.add(fixedXLabel);
+
+    // Fixed Y-axis (green)
+    const fixedYAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 1, 0x00ff00, 0.1, 0.1);
+    fixedSystem.add(fixedYAxis);
+    const fixedYLabel = createLabel("Y", new THREE.Vector3(0, 1.1, 0));
+    fixedSystem.add(fixedYLabel);
+
+    // Fixed Z-axis (blue)
+    const fixedZAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), 1, 0x0000ff, 0.1, 0.1);
+    fixedSystem.add(fixedZAxis);
+    const fixedZLabel = createLabel("Z", new THREE.Vector3(0, 0, 1.1));
+    fixedSystem.add(fixedZLabel);
+
+    // Mobile coordinate system
+    const mobileSystem = new THREE.Group();
+    scene.add(mobileSystem);
+
+    // Mobile U-axis (lighter red)
+    const mobileUAxis = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 1, 0xff6666, 0.1, 0.1);
+    mobileSystem.add(mobileUAxis);
+    const mobileULabel = createLabel("U", new THREE.Vector3(1.25, 0, 0));
+    mobileSystem.add(mobileULabel);
+
+    // Mobile V-axis (lighter green)
+    const mobileVAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 1, 0x66ff66, 0.1, 0.1);
+    mobileSystem.add(mobileVAxis);
+    const mobileVLabel = createLabel("V", new THREE.Vector3(0, 1.25, 0));
+    mobileSystem.add(mobileVLabel);
+
+    // Mobile W-axis (lighter blue)
+    const mobileWAxis = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), 1, 0x6666ff, 0.1, 0.1);
+    mobileSystem.add(mobileWAxis);
+    const mobileWLabel = createLabel("W", new THREE.Vector3(0, 0, 1.25));
+    mobileSystem.add(mobileWLabel);
+
+    // Create a label sprite
+    function createLabel(text, position) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.font = "bold 48px 'Architects Daughter', cursive";
+      ctx.fillStyle = "#007acc";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+
+      const material = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.copy(position);
+      sprite.scale.set(0.5, 0.5, 0.5);
+
+      return sprite;
+    }
+
+    // Set default camera orientation
+    const yaw = 30;
+    const pitch = 32;
+    const roll = 150;
+
+    const distance = 3;
+    const cosYaw = Math.cos(THREE.MathUtils.degToRad(yaw));
+    const sinYaw = Math.sin(THREE.MathUtils.degToRad(yaw));
+    const cosPitch = Math.cos(THREE.MathUtils.degToRad(pitch));
+    const sinPitch = Math.sin(THREE.MathUtils.degToRad(pitch));
+
+    camera.position.set(
+      distance * cosYaw * cosPitch,
+      distance * sinPitch,
+      distance * sinYaw * cosPitch
+    );
+    // Position the camera
+
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    const cameraTarget = new THREE.Vector3(0, 0, 0);
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    cameraTarget.addVectors(camera.position, cameraDirection);
+    camera.lookAt(cameraTarget);
+
+    camera.rotation.z = THREE.MathUtils.degToRad(roll);
+
+    // Translation slider
+    const translationSlider = document.getElementById("translationSlider");
+    const translationValue = document.getElementById("translationValue");
+    const matrixValue = document.getElementById("matrixValue");
+
+    translationSlider.addEventListener("input", updateTranslation);
+
+    function updateTranslation() {
+      const translation = parseFloat(translationSlider.value);
+      translationValue.textContent = translation.toFixed(1);
+      mobileSystem.position.x = translation;
+
+      const transformationMatrix = new THREE.Matrix4();
+      transformationMatrix.makeTranslation(translation, 0, 0);
+      matrixValue.innerHTML = formatMatrix(transformationMatrix.elements, translation);
+    }
+
+    // Format the matrix elements for display (4x4) with labels
+    function formatMatrix(elements, translation) {
+      const formattedElements = elements.slice(0, 12).map(element => element.toFixed(2));
+      const matrix = [
+        "<span style='font-family: \"Architects Daughter\", cursive;'>    U     V     W     P</span>",
+        `<span style='font-family: \"Architects Daughter\", cursive;'>X   ${formattedElements.slice(0, 3).join("  ")}  ${translation.toFixed(2)}</span>`,
+        `<span style='font-family: \"Architects Daughter\", cursive;'>Y   ${formattedElements.slice(4, 7).join("  ")}  0.00</span>`,
+        `<span style='font-family: \"Architects Daughter\", cursive;'>Z   ${formattedElements.slice(8, 11).join("  ")}  0.00</span>`,
+        "<span style='font-family: \"Architects Daughter\", cursive;'>    0    0    0    1</span>"
+      ];
+      return matrix.join("<br>");
+    }
+
+    // Initial update
+    updateTranslation();
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
